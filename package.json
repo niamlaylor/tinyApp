@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/niamlaylor/tinyApp/issues"
   },
-  "homepage": "https://github.com/niamlaylor/tinyApp#readme"
+  "homepage": "https://github.com/niamlaylor/tinyApp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
