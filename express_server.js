@@ -20,35 +20,49 @@ const generateRandomString = () => {
   return output;
 };
 
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
 app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
 app.post('/urls', (req, res) => {
-  console.log(req.body); // Log the POST request to console
-  res.send("Ok"); // Respond with "Ok"
+  let id = generateRandomString() // This function creates a random six digit alphanumeric string and is defined above with global scope
+  urlDatabase[id] = req.body.longURL; // req.body is the object created when a user submits the form
+  res.redirect(`/urls/${id}`); // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
 });
 
-app.get('/urls.json', (req, res) => {
+app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
+  if (urlDatabase[req.params.id]) {
+    const longURL = urlDatabase[req.params.id]; // req.params has one key called 'id' that you need to look up in the database here
+    res.redirect(longURL);
+  } else {
+    res.redirect('/url-not-found');
+  }
+});
+
+app.get('/url-not-found', (req, res) => {
+  res.render('404');
+})
+
+app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format for use as API
   res.json(urlDatabase);
 });
 
-app.get('/urls', (req, res) => {
+app.get('/urls', (req, res) => { // This route is the list of all created short URLs and their corresponding long URLS
   const templateVars = { urls: urlDatabase };
   res.render('urls_index', templateVars);
 });
 
-app.get('/urls/new', (req, res) => {
+app.get('/urls/new', (req, res) => { // This is the route for the page with the form to submit a long URL
   res.render('urls_new');
 });
 
 app.get('/urls/:id', (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   res.render('urls_show', templateVars);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, () => { // This is the default message that appears on the host's console once the server is running
   console.log(`Example app listening on port ${PORT}!`);
 });
