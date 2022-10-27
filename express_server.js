@@ -1,6 +1,8 @@
-const express = require('express');
-const app = express();
-const PORT = 8080;
+const express = require('express');// Import the express library
+const app = express(); // Create a server using express 
+const PORT = 8080; // Set the port to be used in your http://localhost:<PORT>
+
+app.set('view engine', 'ejs'); // set the view engine to ejs
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
