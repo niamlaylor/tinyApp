@@ -22,20 +22,25 @@ const generateRandomString = () => {
 
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
-app.get('/', (req, res) => {
-  res.send('Hello!');
-});
-
 app.post('/urls', (req, res) => {
   let id = generateRandomString() // This function creates a random six digit alphanumeric string and is defined above with global scope
   urlDatabase[id] = req.body.longURL; // req.body is the object created when a user submits the form
   res.redirect(`/urls/${id}`); // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
 });
 
-app.post('/urls/:id/delete', (req, res) => {
-  delete urlDatabase[req.params.id];
+app.post('/urls/:id/delete', (req, res) => { // This POST request comes in when the user hits "Delete" on the /urls page
+  delete urlDatabase[req.params.id]; // The request carries in "id: ?????" and deletes it from our database
+  res.redirect('/urls'); // Finally they get redirected to the /urls main page
+});
+
+app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer updates the URL for an ID (e.g. http://localhost:8080/urls/b2xVn2)
+  urlDatabase[req.params.id] = req.body.longURL; // It looks up the url in the database using the id parameter and then replaces it from the value entered in the form (req.body)
+  res.redirect('/urls'); // Finally it redirects to the URL page, which reflects the change
+});
+
+app.get('/', (req, res) => {
   res.redirect('/urls');
-})
+});
 
 app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
   if (urlDatabase[req.params.id]) {
