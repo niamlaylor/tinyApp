@@ -32,6 +32,11 @@ app.post('/urls', (req, res) => {
   res.redirect(`/urls/${id}`); // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
 });
 
+app.post('/urls/:id/delete', (req, res) => {
+  delete urlDatabase[req.params.id];
+  res.redirect('/urls');
+})
+
 app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
   if (urlDatabase[req.params.id]) {
     const longURL = urlDatabase[req.params.id]; // req.params has one key called 'id' that you need to look up in the database here
