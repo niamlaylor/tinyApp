@@ -1,8 +1,10 @@
 const express = require('express');// Import the express library
+const cookies = require("cookie-parser"); // Import cookie parser library
 const app = express(); // Create a server using express 
 const PORT = 8080; // Set the port to be used in your http://localhost:<PORT>
 
 app.set('view engine', 'ejs'); // set the view engine to ejs
+app.use(cookies()); // allows us to use cookies
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -38,6 +40,20 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
   res.redirect('/urls'); // Finally it redirects to the URL page, which reflects the change
 });
 
+app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing username
+  if (req.body.username.length) {
+    res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
+    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
+  } else {
+    res.redirect('/urls');
+  }
+});
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
+
 app.get('/', (req, res) => {
   res.redirect('/urls');
 });
@@ -52,7 +68,8 @@ app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirect
 });
 
 app.get('/url-not-found', (req, res) => {
-  res.render('404');
+  const templateVars = { username: req.cookies["username"] };
+  res.render('404', templateVars);
 })
 
 app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format for use as API
@@ -60,16 +77,17 @@ app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format f
 });
 
 app.get('/urls', (req, res) => { // This route is the list of all created short URLs and their corresponding long URLS
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => { // This is the route for the page with the form to submit a long URL
-  res.render('urls_new');
+  const templateVars = { username: req.cookies["username"] }; // Allows the .ejs templates to pull the username and display if logged in
+  res.render('urls_new', templateVars);
 });
 
 app.get('/urls/:id', (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"] }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   res.render('urls_show', templateVars);
 });
 
