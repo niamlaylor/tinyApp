@@ -41,7 +41,6 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
 });
 
 app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing username
-  console.log(req.body)
   if (req.body.username.length) {
     res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
     res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
