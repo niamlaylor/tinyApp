@@ -11,6 +11,10 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const userDatabase = {
+  "liamnaylor": "password123"
+};
+
 const generateRandomString = () => {
   const characters = 'abcdefghijklmnopqrstuvwxyz1234567890'
   const charsLength = characters.length;
@@ -41,13 +45,23 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
 });
 
 app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing username
-  if (req.body.username.length) {
+  if (req.body.username.length && userDatabase[req.body.username] && userDatabase[req.body.username] === req.body.password) {
     res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
     res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
   } else {
     res.redirect('/urls');
   }
 });
+
+app.post('/register', (req, res) => {
+  if (req.body.username.length && !userDatabase[req.body.username]) {
+    userDatabase[req.body.username] = req.body.password;
+    res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
+    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
+  } else {
+    res.redirect('/register');
+  }
+})
 
 app.post('/logout', (req, res) => {
   res.clearCookie('username');
@@ -56,6 +70,11 @@ app.post('/logout', (req, res) => {
 
 app.get('/', (req, res) => {
   res.redirect('/urls');
+});
+
+app.get('/register', (req, res) => {
+  const templateVars = { username: req.cookies["username"] };
+  res.render('register', templateVars);
 });
 
 app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
