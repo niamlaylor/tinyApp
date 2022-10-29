@@ -41,6 +41,7 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
 });
 
 app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing username
+  console.log(req.body)
   if (req.body.username.length) {
     res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
     res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
@@ -70,7 +71,7 @@ app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirect
 app.get('/url-not-found', (req, res) => {
   const templateVars = { username: req.cookies["username"] };
   res.render('404', templateVars);
-})
+});
 
 app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format for use as API
   res.json(urlDatabase);
