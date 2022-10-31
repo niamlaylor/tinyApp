@@ -1,5 +1,7 @@
 const express = require('express');// Import the express library
 const cookies = require("cookie-parser"); // Import cookie parser library
+const bcrypt = require('bcryptjs'); // Import password encryption library
+const e = require('express');
 const app = express(); // Create a server using express 
 const PORT = 8080; // Set the port to be used in your http://localhost:<PORT>
 
@@ -12,7 +14,16 @@ const urlDatabase = {
 };
 
 const userDatabase = {
-  "liamnaylor": "password123"
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
 };
 
 const generateRandomString = () => {
@@ -44,27 +55,37 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
   res.redirect('/urls'); // Finally it redirects to the URL page, which reflects the change
 });
 
-app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing username
-  if (req.body.username.length && userDatabase[req.body.username] && userDatabase[req.body.username] === req.body.password) {
-    res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
-    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
-  } else {
-    res.redirect('/urls');
+app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing user_id
+  for (const user in userDatabase) {
+    if (userDatabase[user].email === req.body.email) {
+      res.cookie('user_id', userDatabase[user].id); // This creates the cookie with the key user_id and the value of whatever was inputted by the user
+      break;
+    }
   }
+  console.log(userDatabase);
+  res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
 });
 
 app.post('/register', (req, res) => {
-  if (req.body.username.length && !userDatabase[req.body.username]) {
-    userDatabase[req.body.username] = req.body.password;
-    res.cookie('username', req.body.username); // This creates the cookie with the key username and the value of whatever was inputted by the user
-    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
-  } else {
-    res.redirect('/register');
+  const randomID = generateRandomString();
+  for (const user in userDatabase) {
+    if (userDatabase[user].email !== req.body.email) {
+      userDatabase[randomID] = {
+        id: randomID,
+        email: req.body.email,
+        password: req.body.password
+      }
+    } else {
+      res.redirect('/register');
+    }
   }
-})
+  console.log(userDatabase);
+  res.cookie('user_id', randomID); // This creates the cookie with the key email and the value of whatever was inputted by the user
+  res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
+});
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 
@@ -73,7 +94,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-  const templateVars = { username: req.cookies["username"] };
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
   res.render('register', templateVars);
 });
 
@@ -87,7 +108,7 @@ app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirect
 });
 
 app.get('/url-not-found', (req, res) => {
-  const templateVars = { username: req.cookies["username"] };
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
   res.render('404', templateVars);
 });
 
@@ -96,17 +117,17 @@ app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format f
 });
 
 app.get('/urls', (req, res) => { // This route is the list of all created short URLs and their corresponding long URLS
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  const templateVars = { urls: urlDatabase, user_id: req.cookies["user_id"], userDatabase: userDatabase };
   res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => { // This is the route for the page with the form to submit a long URL
-  const templateVars = { username: req.cookies["username"] }; // Allows the .ejs templates to pull the username and display if logged in
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Allows the .ejs templates to pull the user_id and display if logged in
   res.render('urls_new', templateVars);
 });
 
 app.get('/urls/:id', (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"] }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user_id: req.cookies["user_id"], userDatabase: userDatabase }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   res.render('urls_show', templateVars);
 });
 
