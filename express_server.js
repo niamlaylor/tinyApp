@@ -38,13 +38,13 @@ const generateRandomString = () => {
   return output;
 };
 
-const getUserByEmail = (email, database) => {
-  let userFound = null;
+const getUserByEmail = (email, database) => { // This function checks to see if a user exists based on their email
+  let userFound = null; // If not found, it will return null
   for (let user in database) {
     if (database[user].email === email) {
       userFound = database[user];
     }
-  } return userFound;
+  } return userFound; // If a user is found for the entered email, it will return as an object
 }
 
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
@@ -71,14 +71,14 @@ app.post('/login', (req, res) => { // A POST request to this route via the sign 
     res.statusCode = 400; // Set 400 error code if empty
     res.send(res.statusCode)
   }
-  if (!userDetails) {
+  if (!userDetails) { // If user not found (i.e. = null)
     res.statusCode = 403;
     res.send(res.statusCode);
-  } else if (userDetails) {
-    if (userDetails.password === req.body.password) {
+  } else if (userDetails) { // If user is found
+    if (userDetails.password === req.body.password) { // If user is found and passwords match, then generate cookie for their ID
       res.cookie('user_id', userDetails.id);
       res.redirect('/urls');
-    } else {
+    } else { // If no password match, then return 403 error
       res.statusCode = 403;
       res.send(res.statusCode);
     }
@@ -95,7 +95,7 @@ app.post('/register', (req, res) => {
   if (userDetails) {
     res.statusCode = 400; // Set 400 error code if not found
     res.send(res.statusCode)
-  } else if (!userDetails) {
+  } else if (!userDetails) { // If user not found, create a new user object
     userDatabase[randomID] = {
       id: randomID,
       email: req.body.email,
