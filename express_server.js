@@ -50,7 +50,7 @@ app.post('/urls/:id/delete', (req, res) => { // This POST request comes in when 
   res.redirect('/urls'); // Finally they get redirected to the /urls main page
 });
 
-app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer updates the URL for an ID (e.g. http://localhost:8080/urls/b2xVn2)
+app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
   urlDatabase[req.params.id] = req.body.longURL; // It looks up the url in the database using the id parameter and then replaces it from the value entered in the form (req.body)
   res.redirect('/urls'); // Finally it redirects to the URL page, which reflects the change
 });
@@ -68,15 +68,20 @@ app.post('/login', (req, res) => { // A POST request to this route via the sign 
 
 app.post('/register', (req, res) => {
   const randomID = generateRandomString();
+  if (req.body.email.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
+    res.statusCode = 400; // Set 400 error code if not
+    res.send(res.statusCode)
+  }
   for (const user in userDatabase) {
-    if (userDatabase[user].email !== req.body.email) {
+    if (userDatabase[user].email !== req.body.email) { // If entered email doesn't already exist, create a new object in userDatabase object for new user
       userDatabase[randomID] = {
         id: randomID,
         email: req.body.email,
         password: req.body.password
       }
     } else {
-      res.redirect('/register');
+      res.statusCode = 400; // If entered email matches an existing one, send 400 error
+      res.send(res.statusCode);
     }
   }
   console.log(userDatabase);
@@ -85,7 +90,7 @@ app.post('/register', (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  res.clearCookie('user_id'); // Clears cookies on click of logout
   res.redirect('/urls');
 });
 
@@ -94,7 +99,12 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Renders the register ejs template
+  res.render('register', templateVars);
+});
+
+app.get('/login', (req, res) => {
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Renders the login page ejs template
   res.render('register', templateVars);
 });
 
