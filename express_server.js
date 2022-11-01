@@ -2,6 +2,7 @@ const express = require('express');// Import the express library
 const cookies = require("cookie-parser"); // Import cookie parser library
 const bcrypt = require('bcryptjs'); // Import password encryption library
 const e = require('express');
+const { request } = require('express');
 const app = express(); // Create a server using express 
 const PORT = 8080; // Set the port to be used in your http://localhost:<PORT>
 
@@ -37,6 +38,15 @@ const generateRandomString = () => {
   return output;
 };
 
+const getUserByEmail = (email, database) => {
+  let userFound = null;
+  for (let user in database) {
+    if (database[user].email === email) {
+      userFound = database[user];
+    }
+  } return userFound;
+}
+
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
 app.post('/urls', (req, res) => {
@@ -56,42 +66,50 @@ app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer 
 });
 
 app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing user_id
-  for (const user in userDatabase) {
-    if (userDatabase[user].email === req.body.email) {
-      res.cookie('user_id', userDatabase[user].id); // This creates the cookie with the key user_id and the value of whatever was inputted by the user
-      break;
+  let userDetails = getUserByEmail(req.body.email, userDatabase);
+  if (req.body.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
+    res.statusCode = 400; // Set 400 error code if empty
+    res.send(res.statusCode)
+  }
+  if (!userDetails) {
+    res.statusCode = 403;
+    res.send(res.statusCode);
+  } else if (userDetails) {
+    if (userDetails.password === req.body.password) {
+      res.cookie('user_id', userDetails.id);
+      res.redirect('/urls');
+    } else {
+      res.statusCode = 403;
+      res.send(res.statusCode);
     }
   }
-  console.log(userDatabase);
-  res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
 });
 
 app.post('/register', (req, res) => {
   const randomID = generateRandomString();
-  if (req.body.email.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
-    res.statusCode = 400; // Set 400 error code if not
+  let userDetails = getUserByEmail(req.body.email, userDatabase);
+  if (req.body.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
+    res.statusCode = 400; // Set 400 error code if empty
     res.send(res.statusCode)
   }
-  for (const user in userDatabase) {
-    if (userDatabase[user].email !== req.body.email) { // If entered email doesn't already exist, create a new object in userDatabase object for new user
-      userDatabase[randomID] = {
-        id: randomID,
-        email: req.body.email,
-        password: req.body.password
-      }
-    } else {
-      res.statusCode = 400; // If entered email matches an existing one, send 400 error
-      res.send(res.statusCode);
+  if (userDetails) {
+    res.statusCode = 400; // Set 400 error code if not found
+    res.send(res.statusCode)
+  } else if (!userDetails) {
+    userDatabase[randomID] = {
+      id: randomID,
+      email: req.body.email,
+      password: req.body.password
     }
+    res.cookie('user_id', randomID);
+    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
   }
   console.log(userDatabase);
-  res.cookie('user_id', randomID); // This creates the cookie with the key email and the value of whatever was inputted by the user
-  res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
 });
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id'); // Clears cookies on click of logout
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
 app.get('/', (req, res) => {
@@ -105,7 +123,7 @@ app.get('/register', (req, res) => {
 
 app.get('/login', (req, res) => {
   const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Renders the login page ejs template
-  res.render('register', templateVars);
+  res.render('login', templateVars);
 });
 
 app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)

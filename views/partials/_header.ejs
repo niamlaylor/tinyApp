@@ -14,9 +14,7 @@
       </li>
     </ul>
     <% if (user_id === undefined) { %>
-    <form class="form-inline my-2 my-lg-0" method="POST" action="/login">
-      <input class="form-control mr-sm-2" type="email" name="email" placeholder="Email" aria-label="email">
-      <input class="form-control mr-sm-2" type="password" name="password" placeholder="Password" aria-label="password">
+    <form class="form-inline my-2 my-lg-0" method="GET" action="/login">
       <button class="btn btn-dark my-2 mr-sm-2" type="submit">Sign in</button>
     </form>
     <a class="btn btn-outline-dark my-2 mr-sm-2" href="/register" role="button">Register</a>
