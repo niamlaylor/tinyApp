@@ -45,7 +45,7 @@ const getUserByEmail = (email, database) => { // This function checks to see if 
       userFound = database[user];
     }
   } return userFound; // If a user is found for the entered email, it will return as an object
-}
+};
 
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
