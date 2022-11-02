@@ -54,15 +54,14 @@ const getUserByEmail = (email, database) => {
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
 app.post('/urls', (req, res) => {
-  const guestPostAttempt = `<!DOCTYPE html>
-  <html lang="en"><div class="alert alert-primary" role="alert">
-  This is a primary alert—check it out!
-  </div></html>`
+  const guestPostAttempt = `You need to sign in to create new URLs.\n`
   if (!req.cookies["user_id"]) {
-    res.end(`${guestPostAttempt}\n`);
+    res.end(guestPostAttempt);
+    res.redirect('/urls');
   }
   let id = generateRandomString()
   urlDatabase[id] = req.body.longURL;
+  console.log(urlDatabase)
   // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
   res.redirect(`/urls/${id}`); 
 });
@@ -77,7 +76,7 @@ app.post('/urls/:id/delete', (req, res) => {
 
 // This POST request comes in when a user updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
 app.post('/urls/:id', (req, res) => {
-  // It looks up the url in the database using the id parameter and then replaces it from the value entered in the form (req.body)
+  // It looks up the url in the database using the id parameter then replaces it from the value entered in the form
   urlDatabase[req.params.id] = req.body.longURL; 
   res.redirect('/urls');
 });
