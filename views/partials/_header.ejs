@@ -13,7 +13,7 @@
         <a class="nav-link" href="/urls/new">New URL</a>
       </li>
     </ul>
-    <% if (user_id === undefined) { %>
+    <% if (!user_id) { %>
     <form class="form-inline my-2 my-lg-0" method="GET" action="/login">
       <button class="btn btn-dark my-2 mr-sm-2" type="submit">Sign in</button>
     </form>

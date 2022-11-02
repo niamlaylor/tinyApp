@@ -1,13 +1,15 @@
-const express = require('express');// Import the express library
-const cookies = require("cookie-parser"); // Import cookie parser library
-const bcrypt = require('bcryptjs'); // Import password encryption library
+const express = require('express');
+const cookies = require("cookie-parser"); 
+const bcrypt = require('bcryptjs'); 
 const e = require('express');
 const { request } = require('express');
-const app = express(); // Create a server using express 
-const PORT = 8080; // Set the port to be used in your http://localhost:<PORT>
+// Create a server using express 
+const app = express(); 
+// Set the port to be used in your http://localhost:<PORT>
+const PORT = 8080; 
 
-app.set('view engine', 'ejs'); // set the view engine to ejs
-app.use(cookies()); // allows us to use cookies
+app.set('view engine', 'ejs'); 
+app.use(cookies()); 
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -26,7 +28,7 @@ const userDatabase = {
     password: "dishwasher-funk",
   },
 };
-
+// Helper function to generate a 6 character alphanumeric string
 const generateRandomString = () => {
   const characters = 'abcdefghijklmnopqrstuvwxyz1234567890'
   const charsLength = characters.length;
@@ -37,48 +39,69 @@ const generateRandomString = () => {
   };
   return output;
 };
-
-const getUserByEmail = (email, database) => { // This function checks to see if a user exists based on their email
-  let userFound = null; // If not found, it will return null
+// Helper function to check if a user exists already
+const getUserByEmail = (email, database) => {
+  // If not found, it will return null
+  let userFound = null;
   for (let user in database) {
     if (database[user].email === email) {
       userFound = database[user];
     }
-  } return userFound; // If a user is found for the entered email, it will return as an object
+    // If a user is found for the entered email, it will return as an object
+  } return userFound;
 };
 
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
 app.post('/urls', (req, res) => {
-  let id = generateRandomString() // This function creates a random six digit alphanumeric string and is defined above with global scope
-  urlDatabase[id] = req.body.longURL; // req.body is the object created when a user submits the form
-  res.redirect(`/urls/${id}`); // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
+  const guestPostAttempt = `<!DOCTYPE html>
+  <html lang="en"><div class="alert alert-primary" role="alert">
+  This is a primary alert—check it out!
+  </div></html>`
+  if (!req.cookies["user_id"]) {
+    res.end(`${guestPostAttempt}\n`);
+  }
+  let id = generateRandomString()
+  urlDatabase[id] = req.body.longURL;
+  // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
+  res.redirect(`/urls/${id}`); 
 });
 
-app.post('/urls/:id/delete', (req, res) => { // This POST request comes in when the user hits "Delete" on the /urls page
-  delete urlDatabase[req.params.id]; // The request carries in "id: ?????" and deletes it from our database
-  res.redirect('/urls'); // Finally they get redirected to the /urls main page
+// This POST request comes in when the user hits "Delete" on the /urls page
+app.post('/urls/:id/delete', (req, res) => { 
+  // The request carries in "id: ?????" and deletes it from our database
+  delete urlDatabase[req.params.id]; 
+  // Finally they get redirected to the /urls main page
+  res.redirect('/urls'); 
 });
 
-app.post('/urls/:id', (req, res) => { // This POST request comes in when a suer updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
-  urlDatabase[req.params.id] = req.body.longURL; // It looks up the url in the database using the id parameter and then replaces it from the value entered in the form (req.body)
-  res.redirect('/urls'); // Finally it redirects to the URL page, which reflects the change
+// This POST request comes in when a user updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
+app.post('/urls/:id', (req, res) => {
+  // It looks up the url in the database using the id parameter and then replaces it from the value entered in the form (req.body)
+  urlDatabase[req.params.id] = req.body.longURL; 
+  res.redirect('/urls');
 });
 
-app.post('/login', (req, res) => { // A POST request to this route via the sign in form in the header will create a new cookie containing user_id
+// A POST request to this route via the sign in form in the header will create a new cookie containing user_id
+app.post('/login', (req, res) => { 
   let userDetails = getUserByEmail(req.body.email, userDatabase);
-  if (req.body.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
-    res.statusCode = 400; // Set 400 error code if empty
+  // This checks if the email or password fields are empty when submitted
+  if (req.body.length === 0 || req.body.password.length === 0) { 
+    res.statusCode = 400;
     res.send(res.statusCode)
   }
-  if (!userDetails) { // If user not found (i.e. = null)
+  // If user not found (i.e. = null)
+  if (!userDetails) { 
     res.statusCode = 403;
     res.send(res.statusCode);
-  } else if (userDetails) { // If user is found
-    if (userDetails.password === req.body.password) { // If user is found and passwords match, then generate cookie for their ID
+    // If user is found
+  } else if (userDetails) { 
+    // If user is found and passwords match, then generate cookie for their ID
+    if (userDetails.password === req.body.password) { 
       res.cookie('user_id', userDetails.id);
       res.redirect('/urls');
-    } else { // If no password match, then return 403 error
+      // If no password match, then return 403 error
+    } else { 
       res.statusCode = 403;
       res.send(res.statusCode);
     }
@@ -86,29 +109,33 @@ app.post('/login', (req, res) => { // A POST request to this route via the sign 
 });
 
 app.post('/register', (req, res) => {
+  // see post /login comments above as this is a similar process
   const randomID = generateRandomString();
   let userDetails = getUserByEmail(req.body.email, userDatabase);
-  if (req.body.length === 0 || req.body.password.length === 0) { // This checks if the email or password fields are empty when submitted
-    res.statusCode = 400; // Set 400 error code if empty
+  if (req.body.length === 0 || req.body.password.length === 0) {
+    res.statusCode = 400;
     res.send(res.statusCode)
   }
   if (userDetails) {
-    res.statusCode = 400; // Set 400 error code if not found
+    res.statusCode = 400;
     res.send(res.statusCode)
-  } else if (!userDetails) { // If user not found, create a new user object
+    // If user not found, create a new user object
+  } else if (!userDetails) {
     userDatabase[randomID] = {
       id: randomID,
       email: req.body.email,
       password: req.body.password
     }
     res.cookie('user_id', randomID);
-    res.redirect('/urls'); // Need this redirect back to /urls otherwise the page hangs
+    // Need this redirect back to /urls otherwise the page hangs
+    res.redirect('/urls'); 
   }
   console.log(userDatabase);
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id'); // Clears cookies on click of logout
+  // Clears cookies on click of logout
+  res.clearCookie('user_id'); 
   res.redirect('/login');
 });
 
@@ -117,18 +144,27 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Renders the register ejs template
+  if (req.cookies["user_id"]) {
+    res.redirect('/urls');
+  }
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  // Renders the register ejs template
   res.render('register', templateVars);
 });
 
 app.get('/login', (req, res) => {
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Renders the login page ejs template
+  if (req.cookies["user_id"]) {
+    res.redirect('/urls');
+  }
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  // Renders the login page ejs template
   res.render('login', templateVars);
 });
 
-app.get('/u/:id', (req, res) => { // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
+// This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
+app.get('/u/:id', (req, res) => { 
   if (urlDatabase[req.params.id]) {
-    const longURL = urlDatabase[req.params.id]; // req.params has one key called 'id' that you need to look up in the database here
+    const longURL = urlDatabase[req.params.id]; 
     res.redirect(longURL);
   } else {
     res.redirect('/url-not-found');
@@ -140,25 +176,37 @@ app.get('/url-not-found', (req, res) => {
   res.render('404', templateVars);
 });
 
-app.get('/urls.json', (req, res) => { // This outputs your URLs in JSON format for use as API
+// This outputs your URLs in JSON format for use as API
+app.get('/urls.json', (req, res) => { 
   res.json(urlDatabase);
 });
 
-app.get('/urls', (req, res) => { // This route is the list of all created short URLs and their corresponding long URLS
+// This route is the list of all created short URLs and their corresponding long URLS
+app.get('/urls', (req, res) => { 
   const templateVars = { urls: urlDatabase, user_id: req.cookies["user_id"], userDatabase: userDatabase };
   res.render('urls_index', templateVars);
 });
 
-app.get('/urls/new', (req, res) => { // This is the route for the page with the form to submit a long URL
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; // Allows the .ejs templates to pull the user_id and display if logged in
+// This is the route for the page with the form to submit a new long URL
+app.get('/urls/new', (req, res) => { 
+  if (!req.cookies["user_id"]) {
+    res.redirect('/login');
+  }
+  // Allows the .ejs templates to pull the user_id and display if logged in
+  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase }; 
   res.render('urls_new', templateVars);
 });
 
 app.get('/urls/:id', (req, res) => {
+  // Check if id entered is in our urlDatabase
+  if (!urlDatabase[req.params.id]) {
+    res.redirect('/url-not-found')
+  }
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user_id: req.cookies["user_id"], userDatabase: userDatabase }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   res.render('urls_show', templateVars);
 });
 
-app.listen(PORT, () => { // This is the default message that appears on the host's console once the server is running
+app.listen(PORT, () => {
+  // This is the default message that appears on the host's console once the server is running
   console.log(`Example app listening on port ${PORT}!`);
 });
