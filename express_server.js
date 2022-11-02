@@ -12,9 +12,11 @@ app.set('view engine', 'ejs');
 app.use(cookies()); 
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+  "b2xVn2": {
+    longURL: "http://www.example.com",
+    userID: "userRandomID"
+  },
+}
 
 const userDatabase = {
   userRandomID: {
@@ -60,8 +62,11 @@ app.post('/urls', (req, res) => {
     res.redirect('/urls');
   }
   let id = generateRandomString()
-  urlDatabase[id] = req.body.longURL;
-  console.log(urlDatabase)
+  urlDatabase[id] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"]
+  };
+  console.log(urlDatabase);
   // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
   res.redirect(`/urls/${id}`); 
 });
@@ -77,7 +82,7 @@ app.post('/urls/:id/delete', (req, res) => {
 // This POST request comes in when a user updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
 app.post('/urls/:id', (req, res) => {
   // It looks up the url in the database using the id parameter then replaces it from the value entered in the form
-  urlDatabase[req.params.id] = req.body.longURL; 
+  urlDatabase[req.params.id].longURL = req.body.longURL; 
   res.redirect('/urls');
 });
 
@@ -129,7 +134,6 @@ app.post('/register', (req, res) => {
     // Need this redirect back to /urls otherwise the page hangs
     res.redirect('/urls'); 
   }
-  console.log(userDatabase);
 });
 
 app.post('/logout', (req, res) => {
@@ -163,7 +167,7 @@ app.get('/login', (req, res) => {
 // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
 app.get('/u/:id', (req, res) => { 
   if (urlDatabase[req.params.id]) {
-    const longURL = urlDatabase[req.params.id]; 
+    const longURL = urlDatabase[req.params.id].longURL; 
     res.redirect(longURL);
   } else {
     res.redirect('/url-not-found');
@@ -201,7 +205,7 @@ app.get('/urls/:id', (req, res) => {
   if (!urlDatabase[req.params.id]) {
     res.redirect('/url-not-found')
   }
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user_id: req.cookies["user_id"], userDatabase: userDatabase }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user_id: req.cookies["user_id"], userDatabase: userDatabase }; // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   res.render('urls_show', templateVars);
 });
 

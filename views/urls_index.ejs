@@ -19,6 +19,7 @@
   </head>
   <body>
     <main style="margin: 1em;">
+      <% if (user_id) { %>
       <h3>My URLs</h3>
       <table class="table">
         <thead>
@@ -31,9 +32,10 @@
         </thead>
         <tbody>
           <% for (let id in urls) { %>
+            <% if (urls[id].userID === user_id) { %>
             <tr>
               <td><a href="/u/<%= id %>"><%= id %></a></td>
-              <td><%= urls[id] %></td>
+              <td><%= urls[id].longURL %></td>
               <td>
                 <form method="GET" action="/urls/<%= id %>">
                   <button type="submit" class="btn btn-secondary">Edit</button>
@@ -45,9 +47,20 @@
                 </form>
               </td>
             </tr>
+            <% } %>
           <% } %>
         </tbody>
       </table>
+      <% } else { %>
+        <div class="jumbotron jumbotron-fluid">
+          <div class="container">
+            <h1 class="display-4">Welcome to TinyApp</h1>
+            <p class="lead">Sign in or register to start creating shortened URLs.</p>
+            <a class="btn btn-dark btn-lg" href="/login" role="button">Sign in</a>
+            <a class="btn btn-outline-primary btn-lg" href="/register" role="button">Register</a>
+          </div>
+        </div>
+      <% } %>
     </main>
     <!-- Bootstrap JS -->
     <script
