@@ -1,5 +1,5 @@
 const express = require('express');
-const cookieSession = require('cookie-session')
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const { generateRandomString, getUserByEmail, getUsersURLs } = require('./helpers');
 
@@ -167,11 +167,6 @@ app.get('/u/:id', (req, res) => {
     res.send(res.statusCode);
   }
 });
-// This was additional code to render a 404 page
-// app.get('/url-not-found', (req, res) => {
-//   const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
-//   res.render('404', templateVars);
-// });
 
 // This outputs your URLs in JSON format for use as API
 app.get('/urls.json', (req, res) => {
