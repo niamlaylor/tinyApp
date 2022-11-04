@@ -17,16 +17,6 @@ const urlDatabase = {
 };
 
 const userDatabase = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
 };
 // Helper function to generate a 6 character alphanumeric string
 const generateRandomString = () => {
@@ -122,7 +112,7 @@ app.post('/login', (req, res) => {
     // If user is found
   } else if (userDetails) {
     // If user is found and passwords match, then generate cookie for their ID
-    if (userDetails.password === req.body.password) {
+    if (bcrypt.compareSync(req.body.password, userDetails.password)) {
       res.cookie('user_id', userDetails.id);
       res.redirect('/urls');
       // If no password match, then return 403 error
@@ -146,10 +136,11 @@ app.post('/register', (req, res) => {
     res.send(res.statusCode);
     // If user not found, create a new user object
   } else if (!userDetails) {
+    const salt = bcrypt.genSaltSync(10);
     userDatabase[randomID] = {
       id: randomID,
       email: req.body.email,
-      password: req.body.password
+      password: bcrypt.hashSync(req.body.password, salt),
     };
     res.cookie('user_id', randomID);
     // Need this redirect back to /urls otherwise the page hangs
