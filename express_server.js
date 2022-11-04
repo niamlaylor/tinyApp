@@ -155,14 +155,15 @@ app.get('/u/:id', (req, res) => {
     const longURL = urlDatabase[req.params.id].longURL;
     res.redirect(longURL);
   } else {
-    res.redirect('/url-not-found');
+    res.statusCode = 404;
+    res.send(res.statusCode);
   }
 });
-
-app.get('/url-not-found', (req, res) => {
-  const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
-  res.render('404', templateVars);
-});
+// This was additional code to render a 404 page
+// app.get('/url-not-found', (req, res) => {
+//   const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
+//   res.render('404', templateVars);
+// });
 
 // This outputs your URLs in JSON format for use as API
 app.get('/urls.json', (req, res) => {
@@ -189,9 +190,11 @@ app.get('/urls/new', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   // If our user_id cookie doesn't equal the userID associated with the trackID parameter, then redirect to 404 page
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
-    res.redirect('/url-not-found');
+    res.statusCode = 404;
+    res.send(res.statusCode);
   } else if (!urlDatabase[req.params.id]) {
-    res.redirect('/url-not-found');
+    res.statusCode = 404;
+    res.send(res.statusCode);
   } // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('urls_show', templateVars);

@@ -58,5 +58,3 @@ describe('getUsersURL - user that doesn\'t exist', () => {
     assert.deepEqual(userURLs, expectedURLs);
   });
 });
-
-
