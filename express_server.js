@@ -17,7 +17,8 @@ app.use(cookieSession({
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.example.com",
-    userID: "userRandomID"
+    userID: "userRandomID",
+    visits: 0,
   },
 };
 
@@ -32,10 +33,15 @@ app.post('/urls', (req, res) => {
     res.end(guestPostAttempt);
     res.redirect('/urls');
   }
+  if (!req.body.longURL.length) {
+    res.statusCode = 400;
+    res.send(res.statusCode);
+  }
   let id = generateRandomString();
   urlDatabase[id] = {
     longURL: req.body.longURL,
-    userID: req.session.user_id
+    userID: req.session.user_id,
+    visits: 0,
   };
   // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
   res.redirect(`/urls/${id}`);
@@ -66,6 +72,7 @@ app.post('/urls/:id', (req, res) => {
     res.send(res.statusCode);
   } else { // looks up the url in the database using the id parameter then replaces it from the value entered in the form
     urlDatabase[req.params.id].longURL = req.body.longURL;
+    urlDatabase[req.params.id].visits = 0;
     res.redirect('/urls');
   }
 });
@@ -152,6 +159,7 @@ app.get('/login', (req, res) => {
 // This handles shortURL requests and redirects them to the longURL (e.g. http://localhost:8080/u/b2xVn2 goes to LHL website)
 app.get('/u/:id', (req, res) => {
   if (urlDatabase[req.params.id]) {
+    urlDatabase[req.params.id].visits += 1;
     const longURL = urlDatabase[req.params.id].longURL;
     res.redirect(longURL);
   } else {
@@ -196,7 +204,7 @@ app.get('/urls/:id', (req, res) => {
     res.statusCode = 404;
     res.send(res.statusCode);
   } // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user_id: req.session.user_id, userDatabase: userDatabase };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, visits: urlDatabase[req.params.id].visits, user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('urls_show', templateVars);
 });
 
