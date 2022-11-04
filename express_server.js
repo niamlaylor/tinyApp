@@ -1,5 +1,5 @@
 const express = require('express');
-const cookies = require("cookie-parser");
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
 // Create a server using express
 const app = express();
@@ -7,7 +7,10 @@ const app = express();
 const PORT = 8080;
 
 app.set('view engine', 'ejs');
-app.use(cookies());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 const urlDatabase = {
   "b2xVn2": {
@@ -55,14 +58,14 @@ app.use(express.urlencoded({ extended: true })); // This is middleware that pars
 
 app.post('/urls', (req, res) => {
   const guestPostAttempt = `You need to sign in to create new URLs.\n`;
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     res.end(guestPostAttempt);
     res.redirect('/urls');
   }
   let id = generateRandomString();
   urlDatabase[id] = {
     longURL: req.body.longURL,
-    userID: req.cookies["user_id"]
+    userID: req.session.user_id
   };
   // This redirects them to /urls/:id and adds the generated ID to the path in its GET request
   res.redirect(`/urls/${id}`);
@@ -70,7 +73,7 @@ app.post('/urls', (req, res) => {
 
 // This POST request comes in when the user hits "Delete" on the /urls page
 app.post('/urls/:id/delete', (req, res) => {
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id].userID) {
+  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.statusCode = 400;
     res.send(res.statusCode);
   } else if (!urlDatabase[req.params.id]) {
@@ -85,7 +88,7 @@ app.post('/urls/:id/delete', (req, res) => {
 
 // This POST request comes in when a user updates the URL for an ID (e.g. http://localhost:808gvn 0/urls/b2xVn2)
 app.post('/urls/:id', (req, res) => {
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id].userID) {
+  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.statusCode = 400;
     res.send(res.statusCode);
   } else if (!urlDatabase[req.params.id]) {
@@ -113,7 +116,7 @@ app.post('/login', (req, res) => {
   } else if (userDetails) {
     // If user is found and passwords match, then generate cookie for their ID
     if (bcrypt.compareSync(req.body.password, userDetails.password)) {
-      res.cookie('user_id', userDetails.id);
+      req.session.user_id = userDetails.id;
       res.redirect('/urls');
       // If no password match, then return 403 error
     } else {
@@ -142,7 +145,7 @@ app.post('/register', (req, res) => {
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, salt),
     };
-    res.cookie('user_id', randomID);
+    req.session.user_id = randomID;
     // Need this redirect back to /urls otherwise the page hangs
     res.redirect('/urls');
   }
@@ -150,7 +153,7 @@ app.post('/register', (req, res) => {
 
 app.post('/logout', (req, res) => {
   // Clears cookies on click of logout
-  res.clearCookie('user_id');
+  req.session.user_id = null;
   res.redirect('/login');
 });
 
@@ -159,19 +162,19 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.redirect('/urls');
   }
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
   // Renders the register ejs template
   res.render('register', templateVars);
 });
 
 app.get('/login', (req, res) => {
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.redirect('/urls');
   }
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
   // Renders the login page ejs template
   res.render('login', templateVars);
 });
@@ -187,7 +190,7 @@ app.get('/u/:id', (req, res) => {
 });
 
 app.get('/url-not-found', (req, res) => {
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('404', templateVars);
 });
 
@@ -198,29 +201,29 @@ app.get('/urls.json', (req, res) => {
 
 // This route is the list of all created short URLs and their corresponding long URLS
 app.get('/urls', (req, res) => {
-  const matchingURLs = getUsersURLs(req.cookies["user_id"], urlDatabase);
-  const templateVars = { urls: matchingURLs, user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const matchingURLs = getUsersURLs(req.session.user_id, urlDatabase);
+  const templateVars = { urls: matchingURLs, user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('urls_index', templateVars);
 });
 
 // This is the route for the page with the form to submit a new long URL
 app.get('/urls/new', (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     res.redirect('/login');
   }
   // Allows the .ejs templates to pull the user_id and display if logged in
-  const templateVars = { user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('urls_new', templateVars);
 });
 
 app.get('/urls/:id', (req, res) => {
   // If our user_id cookie doesn't equal the userID associated with the trackID parameter, then redirect to 404 page
-  if (req.cookies["user_id"] !== urlDatabase[req.params.id].userID) {
+  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.redirect('/url-not-found');
   } else if (!urlDatabase[req.params.id]) {
     res.redirect('/url-not-found');
   } // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user_id: req.cookies["user_id"], userDatabase: userDatabase };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, user_id: req.session.user_id, userDatabase: userDatabase };
   res.render('urls_show', templateVars);
 });
 
