@@ -28,14 +28,12 @@ const userDatabase = {
 app.use(express.urlencoded({ extended: true })); // This is middleware that parses incoming requests with JSON payloads
 
 app.post('/urls', (req, res) => {
-  const guestPostAttempt = `You need to sign in to create new URLs.\n`;
   if (!req.session.user_id) {
-    res.end(guestPostAttempt);
     res.redirect('/urls');
   }
   if (!req.body.longURL.length) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. You must enter a URL.</h4>`);
   }
   let id = generateRandomString();
   urlDatabase[id] = {
@@ -51,10 +49,10 @@ app.post('/urls', (req, res) => {
 app.post('/urls/:id/delete', (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. You need an account to delete URLs.</h4>`);
   } else if (!urlDatabase[req.params.id]) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. Unable to complete your request.</h4>`);
   } else { // The request carries in "id: ?????" and deletes it from our database
     delete urlDatabase[req.params.id];
     // Finally they get redirected to the /urls main page
@@ -66,10 +64,10 @@ app.post('/urls/:id/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. Unable to complete your request.</h4>`);
   } else if (!urlDatabase[req.params.id]) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. This URL doesn't exist.</h4>`);
   } else { // looks up the url in the database using the id parameter then replaces it from the value entered in the form
     urlDatabase[req.params.id].longURL = req.body.longURL;
     urlDatabase[req.params.id].visits = 0;
@@ -83,12 +81,12 @@ app.post('/login', (req, res) => {
   // This checks if the email or password fields are empty when submitted
   if (req.body.length === 0 || req.body.password.length === 0) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. You must enter an email and password value.</h4>`);
   }
   // If user not found (i.e. = null)
   if (!userDetails) {
     res.statusCode = 403;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. Enter a valid username and/or password.</h4>`);
     // If user is found
   } else if (userDetails) {
     // If user is found and passwords match, then generate cookie for their ID
@@ -98,7 +96,7 @@ app.post('/login', (req, res) => {
       // If no password match, then return 403 error
     } else {
       res.statusCode = 403;
-      res.send(res.statusCode);
+      res.send(`<h4>${res.statusCode} error. Enter a valid username and/or password.</h4>`);
     }
   }
 });
@@ -107,13 +105,13 @@ app.post('/register', (req, res) => {
   // see post /login comments above as this is a similar process
   const randomID = generateRandomString();
   let userDetails = getUserByEmail(req.body.email, userDatabase);
-  if (req.body.length === 0 || req.body.password.length === 0) {
+  if (req.body.email.length === 0 || req.body.password.length === 0) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. You must enter an email and password value.</h4>`);
   }
   if (userDetails) {
     res.statusCode = 400;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. A user already exists for this email address.</h4>`);
     // If user not found, create a new user object
   } else if (!userDetails) {
     const salt = bcrypt.genSaltSync(10);
@@ -123,19 +121,22 @@ app.post('/register', (req, res) => {
       password: bcrypt.hashSync(req.body.password, salt),
     };
     req.session.user_id = randomID;
-    // Need this redirect back to /urls otherwise the page hangs
     res.redirect('/urls');
   }
 });
 
 app.post('/logout', (req, res) => {
   // Clears cookies on click of logout
-  req.session.user_id = null;
+  req.session = null;
   res.redirect('/login');
 });
 
 app.get('/', (req, res) => {
-  res.redirect('/urls');
+  if (req.session.user_id) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
 });
 
 app.get('/register', (req, res) => {
@@ -143,7 +144,6 @@ app.get('/register', (req, res) => {
     res.redirect('/urls');
   }
   const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
-  // Renders the register ejs template
   res.render('register', templateVars);
 });
 
@@ -152,7 +152,6 @@ app.get('/login', (req, res) => {
     res.redirect('/urls');
   }
   const templateVars = { user_id: req.session.user_id, userDatabase: userDatabase };
-  // Renders the login page ejs template
   res.render('login', templateVars);
 });
 
@@ -164,7 +163,7 @@ app.get('/u/:id', (req, res) => {
     res.redirect(longURL);
   } else {
     res.statusCode = 404;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. Unable to find this URL.</h4>`);
   }
 });
 
@@ -191,16 +190,17 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.get('/urls/:id', (req, res) => {
-  // If our user_id cookie doesn't equal the userID associated with the trackID parameter, then redirect to 404 page
-  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
+  // If our user_id cookie doesn't equal the userID associated with the trackID parameter, then throw 404 error
+  if (!urlDatabase[req.params.id].userID || req.session.user_id !== urlDatabase[req.params.id].userID) {
     res.statusCode = 404;
-    res.send(res.statusCode);
+    res.send(`<h4>${res.statusCode} error. No short URL found.</h4>`);
   } else if (!urlDatabase[req.params.id]) {
     res.statusCode = 404;
-    res.send(res.statusCode);
-  } // This creates an object that contains key value pairs for 'id' and 'longURL' that can be used on the HTML template
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, visits: urlDatabase[req.params.id].visits, user_id: req.session.user_id, userDatabase: userDatabase };
-  res.render('urls_show', templateVars);
+    res.send(`<h4>${res.statusCode} error. No short URL found.</h4>`);
+  } else {
+    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id].longURL, visits: urlDatabase[req.params.id].visits, user_id: req.session.user_id, userDatabase: userDatabase };
+    res.render('urls_show', templateVars);
+  }
 });
 
 app.listen(PORT, () => {

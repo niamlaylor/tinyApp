@@ -21,7 +21,7 @@
     <% } else { %>
     <ul class="navbar-nav my-2 my-lg-0">
       <li class="nav-item">
-        <a class="nav-link" href="/urls">Signed in as: <%= user_id %></a>
+        <a class="nav-link" href="/urls">Signed in as: <%= userDatabase[user_id].email %></a>
       </li>
     </ul>
       <form class="form-inline my-2 my-lg-0" method="POST" action="/logout">
